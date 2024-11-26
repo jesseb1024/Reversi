@@ -21,7 +21,7 @@ public interface Disc {
      * Get the type of the disc.
      * use the:
      *          "⬤",         "⭕"                "💣"
-     *      Simple Disc | Unflippedable Disc | Bomb Disc |
+     *      Simple Disc | UnFlippable Disc | Bomb Disc |
      * respectively.
      */
     String getType();
