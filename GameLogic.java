@@ -77,8 +77,8 @@ public class GameLogic implements PlayableLogic {
 
         // Count total flips to determine if the move is valid
         int totalFlips = countFlips(a);
-yyy
         if (totalFlips > 0) {
+
             // Flip the discs as the move is valid
             flipDiscs(a);
 
