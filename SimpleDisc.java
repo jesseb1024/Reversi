@@ -37,22 +37,6 @@ public class SimpleDisc implements Disc {
         return "⬤"; // Regular disc representation
     }
 
-    // Get the color of the disc
-    public String getColor() {
-        if (color == null) {
-            return "default"; // Return a default color if none is set
-        }
-        return color;
-    }
-
-    // Set the color of the disc
-    public void setColor(String color) {
-        if (color == null || color.isEmpty()) {
-            throw new IllegalArgumentException("Color cannot be null or empty");
-        }
-        this.color = color;
-    }
-
     @Override
     public String toString() {
         return "SimpleDisc{" +

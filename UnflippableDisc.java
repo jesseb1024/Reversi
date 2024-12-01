@@ -1,5 +1,4 @@
 public class UnflippableDisc implements Disc {
-    private String color;
     private Player owner;
 
 
@@ -18,10 +17,5 @@ public class UnflippableDisc implements Disc {
     @Override
     public String getType() {
         return "⭕";
-    }
-
-    public static boolean isUnflippableDisc(Disc disc) {
-        return disc instanceof UnflippableDisc;
-
     }
 }

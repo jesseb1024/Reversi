@@ -1,5 +1,4 @@
 public class BombDisc implements Disc {
-    private String color;
     private Player owner;
 
 
@@ -18,10 +17,5 @@ public class BombDisc implements Disc {
      @Override
     public String getType() {
         return "\uD83D\uDCA3";
-    }
-
-     public static boolean isBombDisc(Disc disc) {
-        return disc instanceof BombDisc;
-
     }
 }

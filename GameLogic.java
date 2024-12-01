@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 public class GameLogic implements PlayableLogic {
 
@@ -14,6 +12,11 @@ public class GameLogic implements PlayableLogic {
     private boolean isFirstPlayerTurn;
     final private List<Position> bombed = new ArrayList<>();
     final private List<Position> bombedCount = new ArrayList<>();
+    private static final int[][] DIRECTIONS = {
+            {-1, 0}, {1, 0}, {0, -1}, {0, 1}, // Up, down, left, right
+            {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // Diagonals
+    };
+
 
     public GameLogic() {
         BOARD = new Disc[BOARD_SIZE][BOARD_SIZE];
@@ -99,25 +102,6 @@ public class GameLogic implements PlayableLogic {
     }
 
 
-    public void printGameHistory() { // delete later
-        System.out.println("Move History:");
-        for (Move move : moveHistory) {
-            System.out.println("Move: Position(" + move.position().row() + ", " + move.position().col() + "), Disc Type: " + move.disc().getType()
-                    + ", Owner: " + move.disc().getOwner().isPlayerOne);
-        }
-
-        System.out.println("\nFlipped Discs History:");
-        int flipIndex = 1;
-        for (List<Position> flippedList : flipedDiscs) {
-            System.out.println("Flip Set " + flipIndex + ":");
-            for (Position pos : flippedList) {
-                System.out.println(" - Position(" + pos.row() + ", " + pos.col() + ")");
-            }
-            flipIndex++;
-        }
-        System.out.println("--------------------------------------");
-    }
-
     /**
      * Flips the discs on the board based on the position where the current player places a disc.
      * Parameters:
@@ -127,16 +111,10 @@ public class GameLogic implements PlayableLogic {
         int r = a.row();
         int c = a.col();
 
-        // Define directions for checking
-        int[][] directions = {
-                {-1, 0}, {1, 0}, {0, -1}, {0, 1}, // Up, down, left, right
-                {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // Diagonals
-        };
-
         List<Position> discsToFlip = new ArrayList<>(); // Keep track of potential discs to flip
 
         // Iterate through each direction to check for discs to flip
-        for (int[] dir : directions) {
+        for (int[] dir : DIRECTIONS) {
             int newRow = r + dir[0];
             int newCol = c + dir[1];
 
@@ -219,14 +197,8 @@ public class GameLogic implements PlayableLogic {
 
         List<Position> count = new ArrayList<>(); // List to store all positions that can be flipped.
 
-        // Directions for checking possible flips (vertical, horizontal, diagonal).
-        int[][] directions = {
-                {-1, 0}, {1, 0}, {0, -1}, {0, 1}, // Up, down, left, right
-                {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // Diagonals
-        };
-
         // Iterate through each direction.
-        for (int[] dir : directions) {
+        for (int[] dir : DIRECTIONS) {
             List<Position> temp = new ArrayList<>(); // Temporary list to store positions in the current direction.
             int newRow = r + dir[0]; // Calculate the next row in the direction.
             int newCol = c + dir[1]; // Calculate the next column in the direction.
@@ -357,6 +329,12 @@ public class GameLogic implements PlayableLogic {
         }
         return count;
     }
+    private void processBomb(Position pos, List<Position> discsToFlip) {
+        if (!isDuplicate(pos)) {
+            handleBombEffect(pos, discsToFlip); // Recursive call for chained bombs.
+        }
+    }
+
 
     /**
      * Handles the bomb effect by flipping discs around a bomb position.
@@ -365,40 +343,37 @@ public class GameLogic implements PlayableLogic {
      * - discsToFlip: List<Position> of discs affected by the bomb.
      * Returns: List<Position> of all positions flipped due to the bomb effect.
      **/
-    private List<Position> handleBombEffect(Position a, List<Position> discsToFlip) {
-        bombed.add(a); // Add the current bomb position to the list of processed bombs.
-        int r = a.row(); // Row index of the bomb position.
-        int c = a.col(); // Column index of the bomb position.
+    private List<Position> handleBombEffect(Position initialBomb, List<Position> discsToFlip) {
+        Queue<Position> bombQueue = new LinkedList<>();
+        bombQueue.add(initialBomb);
+        bombed.add(initialBomb); // Mark the initial bomb
 
-        // Directions for checking surrounding positions (vertical, horizontal, diagonal).
-        int[][] directions = {
-                {-1, 0}, {1, 0}, {0, -1}, {0, 1}, // Up, down, left, right
-                {-1, -1}, {-1, 1}, {1, -1}, {1, 1} // Diagonals
-        };
+        while (!bombQueue.isEmpty()) {
+            Position bombPosition = bombQueue.poll();
+            int r = bombPosition.row();
+            int c = bombPosition.col();
 
-        // Iterate through each direction to check surrounding discs.
-        for (int[] dir : directions) {
-            int newRow = r + dir[0]; // Calculate the row in the current direction.
-            int newCol = c + dir[1]; // Calculate the column in the current direction.
+            for (int[] dir : DIRECTIONS) {
+                int newRow = r + dir[0];
+                int newCol = c + dir[1];
 
-            // Check if the position is within bounds and contains an opponent's disc.
-            if (isWithinBounds(newRow, newCol) && BOARD[newRow][newCol] != null && BOARD[newRow][newCol].getOwner() != CURRENT_PLAYER) {
-                Position pos = new Position(newRow, newCol); // Create a position object for the current disc.
-
-                // If the disc is another bomb and hasn't been processed, recursively handle its effect.
-                if (BOARD[newRow][newCol].getType().equals("\uD83D\uDCA3") && !isDuplicate(pos)) {
-                    handleBombEffect(pos, discsToFlip); // Recursively handle bomb effects.
-                }
-
-                // If the disc is not unflippable, add it to the list of discs to flip.
-                if (!BOARD[newRow][newCol].getType().equals("⭕")) {
-                    discsToFlip.add(pos);
+                if (isWithinBounds(newRow, newCol)) {
+                    Disc currentDisc = BOARD[newRow][newCol];
+                    if (currentDisc != null && currentDisc.getOwner() != CURRENT_PLAYER) {
+                        Position newPos = new Position(newRow, newCol);
+                        if ("\uD83D\uDCA3".equals(currentDisc.getType()) && !isDuplicate(newPos)) {
+                            bombQueue.add(newPos); // Add new bomb to the queue
+                            bombed.add(newPos);
+                        } else if (!"⭕".equals(currentDisc.getType())) {
+                            discsToFlip.add(newPos);
+                        }
+                    }
                 }
             }
         }
-
         return discsToFlip;
     }
+
 
 
     /**
@@ -426,13 +401,12 @@ public class GameLogic implements PlayableLogic {
         PLAYER2.reset_bombs_and_unflippedable();
         flipedDiscs.clear();
         moveHistory.clear();
+        System.out.println("Game has been reset");
     }
 
     @Override
     public void undoLastMove() {
-        if (!PLAYER1.isHuman() || !PLAYER2.isHuman()) {return;}
-
-        else {
+        if (PLAYER1.isHuman() && PLAYER2.isHuman()) {
             if (!moveHistory.isEmpty()) {
                 System.out.println("Undoing last move:");
 
@@ -464,7 +438,7 @@ public class GameLogic implements PlayableLogic {
                     System.out.println("\tNo previous move available to undo.");
                 }
 
-                // Restore bomb and unflippedable counts if the last move involved special discs
+                // Restore bomb and unflippable counts if the last move involved special discs
                 if ("\uD83D\uDCA3".equals(lastMove.disc().getType())) {
                     lastMove.disc().getOwner().number_of_bombs++;
                 } else if ("⭕".equals(lastMove.disc().getType())) {
