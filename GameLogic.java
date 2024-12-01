@@ -329,12 +329,6 @@ public class GameLogic implements PlayableLogic {
         }
         return count;
     }
-    private void processBomb(Position pos, List<Position> discsToFlip) {
-        if (!isDuplicate(pos)) {
-            handleBombEffect(pos, discsToFlip); // Recursive call for chained bombs.
-        }
-    }
-
 
     /**
      * Handles the bomb effect by flipping discs around a bomb position.
@@ -346,13 +340,15 @@ public class GameLogic implements PlayableLogic {
     private List<Position> handleBombEffect(Position initialBomb, List<Position> discsToFlip) {
         Queue<Position> bombQueue = new LinkedList<>();
         bombQueue.add(initialBomb);
-        bombed.add(initialBomb); // Mark the initial bomb
+        bombed.add(initialBomb); // Mark the initial bomb as processed
 
+        // Iterate over each bomb in the queue, ensuring all linked bombs are processed
         while (!bombQueue.isEmpty()) {
             Position bombPosition = bombQueue.poll();
             int r = bombPosition.row();
             int c = bombPosition.col();
 
+            // Iterate over all directions to identify affected discs and additional bombs
             for (int[] dir : DIRECTIONS) {
                 int newRow = r + dir[0];
                 int newCol = c + dir[1];
@@ -361,16 +357,22 @@ public class GameLogic implements PlayableLogic {
                     Disc currentDisc = BOARD[newRow][newCol];
                     if (currentDisc != null && currentDisc.getOwner() != CURRENT_PLAYER) {
                         Position newPos = new Position(newRow, newCol);
-                        if ("\uD83D\uDCA3".equals(currentDisc.getType()) && !isDuplicate(newPos)) {
-                            bombQueue.add(newPos); // Add new bomb to the queue
-                            bombed.add(newPos);
-                        } else if (!"⭕".equals(currentDisc.getType())) {
+
+                        // Always add the disc to the discsToFlip list, regardless of whether it is a bomb or not
+                        if (!"⭕".equals(currentDisc.getType())) {
                             discsToFlip.add(newPos);
+                        }
+
+                        // Handle chain reaction for bombs, adding them to the queue for further processing
+                        if ("\uD83D\uDCA3".equals(currentDisc.getType()) && !isDuplicate(newPos)) {
+                            bombQueue.add(newPos);
+                            bombed.add(newPos); // Mark the new bomb as processed
                         }
                     }
                 }
             }
         }
+
         return discsToFlip;
     }
 
